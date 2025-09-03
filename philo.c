@@ -12,6 +12,8 @@ int	ft_atoi(char *str)
 		res = res * 10 + (str[i] - '0');
 		i++;
 	}
+	if (str[i] != '\0')
+		return (-1);
 	return (res);
 }
 void	parse_args(int ac, char **av, t_params *params)
@@ -31,7 +33,10 @@ int	main(int ac, char **av)
 	int i;
 
 	if (ac != 5 && ac != 6)
+	{
+		printf("il faut 5 agrs");
 		return (1);
+	}
 	t_params params;
 	parse_args(ac, av, &params);
 	printf("%d\n", params.number_of_philosophers);
