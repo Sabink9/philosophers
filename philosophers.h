@@ -20,8 +20,14 @@ typedef struct s_shared
 {
 	int				finished_count;
 	pthread_mutex_t	finished_mutex;
-}
-					t_shared;
+
+	int				someone_dead;
+	pthread_mutex_t	death_mutex;
+
+	pthread_mutex_t print_mutex; // 🔹 protège les affichages
+	pthread_mutex_t *forks;      // 🔹 stocker les forks pour free/destroy
+}					t_shared;
+
 typedef struct s_philo
 {
 	int				id;

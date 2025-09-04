@@ -5,8 +5,8 @@ int	ft_atoi(char *str)
 	int	res;
 	int	i;
 
-	i = 0;
 	res = 0;
+	i = 0;
 	while (str[i] >= '0' && str[i] <= '9')
 	{
 		res = res * 10 + (str[i] - '0');
@@ -16,6 +16,7 @@ int	ft_atoi(char *str)
 		return (-1);
 	return (res);
 }
+
 void	parse_args(int ac, char **av, t_params *params)
 {
 	params->number_of_philosophers = ft_atoi(av[1]);
@@ -28,7 +29,6 @@ void	parse_args(int ac, char **av, t_params *params)
 		params->number_of_times_each_philosopher_must_eat = -1;
 }
 
-
 long	current_time_ms(void)
 {
 	struct timeval	tv;
@@ -36,16 +36,27 @@ long	current_time_ms(void)
 	gettimeofday(&tv, NULL);
 	return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
+int	ft_strcmp(const char *s1, const char *s2)
+{
+	int	i;
 
-// Affiche le statut d'un philosophe
+	i = 0;
+	while (s1[i] && s2[i] && (unsigned char)s1[i] == (unsigned char)s2[i])
+		i++;
+	return ((unsigned char)s1[i] - (unsigned char)s2[i]);
+}
+
 void	print_status(t_philo *philo, char *message, long start_time)
 {
 	long	time;
 
-	pthread_mutex_lock(&philo->meal_mutex);
-	time = current_time_ms() - start_time;
-	printf("%ld %d %s\n", time, philo->id + 1, message);
-	pthread_mutex_unlock(&philo->meal_mutex);
+	pthread_mutex_lock(&philo->shared->print_mutex);
+	if (!philo->shared->someone_dead || ft_strcmp(message, "died") == 0)
+	{
+		time = current_time_ms() - start_time;
+		printf("%ld %d %s\n", time, philo->id, message);
+	}
+	pthread_mutex_unlock(&philo->shared->print_mutex);
 }
 
 int	finish_eat(t_philo *philo, t_params *params)
@@ -58,7 +69,49 @@ int	finish_eat(t_philo *philo, t_params *params)
 		return (1);
 }
 
-// Routine du philosophe
+void	take_fork(t_philo *philo, long start_time)
+{
+	if (philo->id % 2 == 0)
+	{
+		pthread_mutex_lock(philo->left_fork);
+		print_status(philo, "has taken a fork", start_time);
+		usleep(50);
+		pthread_mutex_lock(philo->right_fork);
+		print_status(philo, "has taken a fork", start_time);
+	}
+	else
+	{
+		pthread_mutex_lock(philo->right_fork);
+		print_status(philo, "has taken a fork", start_time);
+		usleep(50);
+		pthread_mutex_lock(philo->left_fork);
+		print_status(philo, "has taken a fork", start_time);
+	}
+}
+
+void	eating(t_philo *philo, long start_time)
+{
+	pthread_mutex_lock(&philo->meal_mutex);
+	philo->last_meal_time = current_time_ms();
+	philo->meals_eaten++;
+	pthread_mutex_unlock(&philo->meal_mutex);
+	print_status(philo, "is eating", start_time);
+	usleep(philo->params->time_to_eat * 1000);
+}
+
+int	is_dead(t_philo *philo, long start_time)
+{
+	long	now;
+
+	now = current_time_ms();
+	if ((now - philo->last_meal_time) > philo->params->time_to_die)
+	{
+		print_status(philo, "died", start_time);
+		return (1);
+	}
+	return (0);
+}
+
 void	*routine_philo(void *arg)
 {
 	t_philo	*philo;
@@ -66,87 +119,63 @@ void	*routine_philo(void *arg)
 
 	philo = (t_philo *)arg;
 	start_time = current_time_ms();
-	usleep(100 * philo->id); // petit décalage initial
+	usleep(100 * philo->id);
 	while (1)
 	{
-		// Prendre les fourchettes (stratégie anti-deadlock)
-		if (philo->id % 2 == 0)
+		pthread_mutex_lock(&philo->shared->death_mutex);
+		if (philo->shared->someone_dead)
 		{
-			pthread_mutex_lock(philo->left_fork);
-			print_status(philo, "has taken a fork", start_time);
-			usleep(50);
-			pthread_mutex_lock(philo->right_fork);
-			print_status(philo, "has taken a fork", start_time);
+			pthread_mutex_unlock(&philo->shared->death_mutex);
+			break ;
 		}
-		else
-		{
-			pthread_mutex_lock(philo->right_fork);
-			print_status(philo, "has taken a fork", start_time);
-			usleep(50);
-			pthread_mutex_lock(philo->left_fork);
-			print_status(philo, "has taken a fork", start_time);
-		}
-		// Manger
-		pthread_mutex_lock(&philo->meal_mutex);
-		philo->last_meal_time = current_time_ms();
-		philo->meals_eaten++;
-		pthread_mutex_unlock(&philo->meal_mutex);
-		print_status(philo, "is eating", start_time);
-		usleep(philo->params->time_to_eat * 1000);
-		// Reposer les fourchettes
+		pthread_mutex_unlock(&philo->shared->death_mutex);
+		take_fork(philo, start_time);
+		eating(philo, start_time);
 		pthread_mutex_unlock(philo->right_fork);
 		pthread_mutex_unlock(philo->left_fork);
-		// Vérifier si le philosophe a fini de manger
 		if (!finish_eat(philo, philo->params))
 		{
-			// Incrémenter le compteur partagé
 			pthread_mutex_lock(&philo->shared->finished_mutex);
 			philo->shared->finished_count++;
 			pthread_mutex_unlock(&philo->shared->finished_mutex);
-			break ; // Sortir de la boucle
+			break ;
 		}
-		// Dormir
 		print_status(philo, "is sleeping", start_time);
 		usleep(philo->params->time_to_sleep * 1000);
-		// Penser
 		print_status(philo, "is thinking", start_time);
 	}
 	return (NULL);
 }
 
-// Initialisation des philosophes et des fourchettes
-int	init_philos(t_params params, t_philo **philos_out)
+int	init_philos(t_params *params, t_shared *shared, t_philo **philos_out)
 {
-	t_philo			*philos;
-	pthread_mutex_t	*forks;
-	int				i;
+	t_philo	*philos;
+	int		i;
 
-	philos = malloc(sizeof(t_philo) * params.number_of_philosophers);
+	philos = malloc(sizeof(t_philo) * params->number_of_philosophers);
 	if (!philos)
 		return (-1);
-	forks = malloc(sizeof(pthread_mutex_t) * params.number_of_philosophers);
-	if (!forks)
+	shared->forks = malloc(sizeof(pthread_mutex_t)
+			* params->number_of_philosophers);
+	if (!shared->forks)
 	{
 		free(philos);
 		return (-1);
 	}
-	// Initialiser les mutex des fourchettes
 	i = 0;
-	while (i < params.number_of_philosophers)
-	{
-		pthread_mutex_init(&forks[i], NULL);
-		i++;
-	}
-	// Initialiser les philosophes
+	while (i < params->number_of_philosophers)
+		pthread_mutex_init(&shared->forks[i++], NULL);
 	i = 0;
-	while (i < params.number_of_philosophers)
+	while (i < params->number_of_philosophers)
 	{
-		philos[i].id = i;
-		philos[i].params = &params;
-		philos[i].left_fork = &forks[i];
-		philos[i].right_fork = &forks[(i + 1) % params.number_of_philosophers];
+		philos[i].id = i + 1;
+		philos[i].params = params;
+		philos[i].left_fork = &shared->forks[i];
+		philos[i].right_fork = &shared->forks[(i + 1)
+			% params->number_of_philosophers];
 		philos[i].last_meal_time = current_time_ms();
 		philos[i].meals_eaten = 0;
+		philos[i].shared = shared;
 		pthread_mutex_init(&philos[i].meal_mutex, NULL);
 		i++;
 	}
@@ -154,70 +183,87 @@ int	init_philos(t_params params, t_philo **philos_out)
 	return (0);
 }
 
-// Main
+void	*monitor_routine(void *arg)
+{
+	t_philo		*philos;
+	t_shared	*shared;
+	long		start_time;
+	int			i;
+
+	philos = (t_philo *)arg;
+	shared = philos[0].shared;
+	start_time = current_time_ms();
+	while (1)
+	{
+		i = 0;
+		while (i < philos[0].params->number_of_philosophers)
+		{
+			if (is_dead(&philos[i], start_time))
+			{
+				pthread_mutex_lock(&shared->death_mutex);
+				shared->someone_dead = 1;
+				pthread_mutex_unlock(&shared->death_mutex);
+				return (NULL);
+			}
+			i++;
+		}
+		pthread_mutex_lock(&shared->finished_mutex);
+		if (shared->finished_count == philos[0].params->number_of_philosophers)
+		{
+			pthread_mutex_unlock(&shared->finished_mutex);
+			break ;
+		}
+		pthread_mutex_unlock(&shared->finished_mutex);
+		usleep(1000);
+	}
+	return (NULL);
+}
+
 int	main(int ac, char **av)
 {
-	t_params params;
-	parse_args(ac, av, &params);
+	t_params	params;
+	t_shared	shared;
+	t_philo		*philos;
+	int			i;
+	pthread_t	monitor_thread;
 
-	// 1️⃣ Allocation des philosophes et des forks
-	t_philo *philos = malloc(sizeof(t_philo) * params.number_of_philosophers);
-	pthread_mutex_t *forks = malloc(sizeof(pthread_mutex_t)
-			* params.number_of_philosophers);
-	if (!philos || !forks)
+	if (ac < 5 || ac > 6)
 		return (1);
-
-	// 2️⃣ Initialisation de la structure partagée
-	t_shared shared;
+	parse_args(ac, av, &params);
 	shared.finished_count = 0;
+	shared.someone_dead = 0;
 	pthread_mutex_init(&shared.finished_mutex, NULL);
-
-	// 3️⃣ Initialisation des forks et des philosophes
-	int i = 0;
-	while (i < params.number_of_philosophers)
-	{
-		pthread_mutex_init(&forks[i], NULL);
-
-		philos[i].id = i + 1; // id commence à 1
-		philos[i].left_fork = &forks[i];
-		philos[i].right_fork = &forks[(i + 1) % params.number_of_philosophers];
-		philos[i].params = &params;
-		philos[i].shared = &shared; // pointeur vers la structure partagée
-		philos[i].meals_eaten = 0;
-		pthread_mutex_init(&philos[i].meal_mutex, NULL);
-
-		i++;
-	}
-
-	// 4️⃣ Création des threads
+	pthread_mutex_init(&shared.death_mutex, NULL);
+	pthread_mutex_init(&shared.print_mutex, NULL);
+	philos = NULL;
+	if (init_philos(&params, &shared, &philos) != 0)
+		return (1);
 	i = 0;
 	while (i < params.number_of_philosophers)
 	{
 		pthread_create(&philos[i].thread, NULL, routine_philo, &philos[i]);
 		i++;
 	}
-
-	// 5️⃣ Attente de la fin de tous les threads
+	pthread_create(&monitor_thread, NULL, monitor_routine, philos);
 	i = 0;
 	while (i < params.number_of_philosophers)
 	{
 		pthread_join(philos[i].thread, NULL);
 		i++;
 	}
-
-	// 6️⃣ Nettoyage
+	pthread_join(monitor_thread, NULL);
 	i = 0;
 	while (i < params.number_of_philosophers)
 	{
-		pthread_mutex_destroy(&forks[i]);
+		pthread_mutex_destroy(&shared.forks[i]);
 		pthread_mutex_destroy(&philos[i].meal_mutex);
 		i++;
 	}
 	pthread_mutex_destroy(&shared.finished_mutex);
-
+	pthread_mutex_destroy(&shared.death_mutex);
+	pthread_mutex_destroy(&shared.print_mutex);
+	free(shared.forks);
 	free(philos);
-	free(forks);
-
-	printf("Simulation terminée : tous les philosophes ont fini de manger.\n");
+	printf("Simulation terminée.\n");
 	return (0);
 }
