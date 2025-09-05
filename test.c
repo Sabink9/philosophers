@@ -71,19 +71,29 @@ int	finish_eat(t_philo *philo, t_params *params)
 
 void	take_fork(t_philo *philo, long start_time)
 {
+	// Cas spécial pour 1 philosophe
+	if (philo->params->number_of_philosophers == 1)
+	{
+		pthread_mutex_lock(philo->left_fork);
+		print_status(philo, "has taken a fork", start_time);
+		// Attend time_to_die avant de mourir
+		usleep(philo->params->time_to_die * 1000);
+		pthread_mutex_unlock(philo->left_fork);
+		return ;
+	}
+	// Philosophe pair prend left puis right
 	if (philo->id % 2 == 0)
 	{
 		pthread_mutex_lock(philo->left_fork);
 		print_status(philo, "has taken a fork", start_time);
-		usleep(50);
 		pthread_mutex_lock(philo->right_fork);
 		print_status(philo, "has taken a fork", start_time);
 	}
+	// Philosophe impair prend right puis left
 	else
 	{
 		pthread_mutex_lock(philo->right_fork);
 		print_status(philo, "has taken a fork", start_time);
-		usleep(50);
 		pthread_mutex_lock(philo->left_fork);
 		print_status(philo, "has taken a fork", start_time);
 	}
@@ -119,9 +129,12 @@ void	*routine_philo(void *arg)
 
 	philo = (t_philo *)arg;
 	start_time = current_time_ms();
-	usleep(100 * philo->id);
+	// Petit décalage pour éviter les collisions initiales
+	if (philo->id % 2 == 0)
+		usleep(100 * philo->id);
 	while (1)
 	{
+		// Vérifie si quelqu'un est déjà mort
 		pthread_mutex_lock(&philo->shared->death_mutex);
 		if (philo->shared->someone_dead)
 		{
@@ -129,10 +142,28 @@ void	*routine_philo(void *arg)
 			break ;
 		}
 		pthread_mutex_unlock(&philo->shared->death_mutex);
+		// Prendre les fourchettes
 		take_fork(philo, start_time);
+		// Vérifier si mort après avoir pris les fourchettes
+		if (is_dead(philo, start_time))
+		{
+			pthread_mutex_unlock(philo->left_fork);
+			if (philo->params->number_of_philosophers > 1)
+				pthread_mutex_unlock(philo->right_fork);
+			break ;
+		}
+		// Manger
 		eating(philo, start_time);
+		// Vérifier si mort après manger
+		if (is_dead(philo, start_time))
+		{
+			pthread_mutex_unlock(philo->left_fork);
+			pthread_mutex_unlock(philo->right_fork);
+			break ;
+		}
 		pthread_mutex_unlock(philo->right_fork);
 		pthread_mutex_unlock(philo->left_fork);
+		// Vérifier si a fini de manger le nombre requis
 		if (!finish_eat(philo, philo->params))
 		{
 			pthread_mutex_lock(&philo->shared->finished_mutex);
@@ -140,8 +171,10 @@ void	*routine_philo(void *arg)
 			pthread_mutex_unlock(&philo->shared->finished_mutex);
 			break ;
 		}
+		// Dormir
 		print_status(philo, "is sleeping", start_time);
 		usleep(philo->params->time_to_sleep * 1000);
+		// Penser
 		print_status(philo, "is thinking", start_time);
 	}
 	return (NULL);
