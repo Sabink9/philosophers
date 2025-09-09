@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   philosophers.h                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: saciurus <saciurus@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/09/09 17:10:03 by saciurus          #+#    #+#             */
+/*   Updated: 2025/09/09 18:36:14 by saciurus         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef PHILOSOPHERS_H
 # define PHILOSOPHERS_H
 
@@ -7,38 +19,32 @@
 # include <sys/time.h>
 # include <unistd.h>
 
-typedef struct s_params
-{
-	int				number_of_philosophers;
-	long			time_to_die;
-	long			time_to_eat;
-	long			time_to_sleep;
-	int				number_of_times_each_philosopher_must_eat;
-}					t_params;
-
-typedef struct s_shared
-{
-	int				finished_count;
-	pthread_mutex_t	finished_mutex;
-
-	int				someone_dead;
-	pthread_mutex_t	death_mutex;
-
-	pthread_mutex_t print_mutex; // 🔹 protège les affichages
-	pthread_mutex_t *forks;      // 🔹 stocker les forks pour free/destroy
-}					t_shared;
-
 typedef struct s_philo
 {
 	int				id;
-	pthread_t		thread;
+	int				meals_eaten;
+	long			last_meal;
 	pthread_mutex_t	*left_fork;
 	pthread_mutex_t	*right_fork;
-	t_params		*params;
-	t_shared		*shared;
-	long			last_meal_time;
-	int				meals_eaten;
-	pthread_mutex_t	meal_mutex;
+	struct s_data	*data;
 }					t_philo;
+
+typedef struct s_data
+{
+	int				nb_philo;
+	long			time_to_die;
+	long			time_to_eat;
+	long			time_to_sleep;
+	int				must_eat;
+	int				stop;
+	int				start_time;
+	int				next_to_eat;
+	t_philo			*philos;
+	pthread_mutex_t	*forks;
+	pthread_mutex_t	print_mutex;
+	pthread_mutex_t	meal_mutex;
+}					t_data;
+
+void				parse_args(int ac, char **av, t_data *params);
 
 #endif

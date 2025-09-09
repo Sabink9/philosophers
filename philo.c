@@ -16,33 +16,33 @@ int	ft_atoi(char *str)
 		return (-1);
 	return (res);
 }
-void	parse_args(int ac, char **av, t_params *params)
+void	parse_args(int ac, char **av, t_data *params)
 {
-	params->number_of_philosophers = ft_atoi(av[1]);
+	params->nb_philo = ft_atoi(av[1]);
 	params->time_to_die = ft_atoi(av[2]);
 	params->time_to_eat = ft_atoi(av[3]);
 	params->time_to_sleep = ft_atoi(av[4]);
 	if (ac == 6)
-		params->number_of_times_each_philosopher_must_eat = ft_atoi(av[5]);
+		params->must_eat = ft_atoi(av[5]);
 	else
-		params->number_of_times_each_philosopher_must_eat = -1;
+		params->must_eat = -1;
 }
 
-int	main(int ac, char **av)
-{
-	int i;
+// int	main(int ac, char **av)
+// {
+// 	int i;
 
-	if (ac != 5 && ac != 6)
-	{
-		printf("il faut 5 agrs");
-		return (1);
-	}
-	t_params params;
-	parse_args(ac, av, &params);
-	printf("%d\n", params.number_of_philosophers);
-	printf("%ld\n", params.time_to_die);
-	printf("%ld\n", params.time_to_eat);
-	printf("%ld\n", params.time_to_sleep);
-	printf("%d\n", params.number_of_times_each_philosopher_must_eat);
-	return (0);
-}
+// 	if (ac != 5 && ac != 6)
+// 	{
+// 		printf("il faut 5 args");
+// 		return (1);
+// 	}
+// 	t_data params;
+// 	parse_args(ac, av, &params);
+// 	printf("%d\n", params.nb_philo);
+// 	printf("%ld\n", params.time_to_die);
+// 	printf("%ld\n", params.time_to_eat);
+// 	printf("%ld\n", params.time_to_sleep);
+// 	printf("%d\n", params.must_eat);
+// 	return (0);
+// }
