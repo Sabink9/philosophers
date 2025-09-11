@@ -14,7 +14,7 @@ void	*fonction_thread(void *arg)
 
 	data = arg;
 	i = 0;
-	while (i < 100000)
+	while (i < 10000)
 	{
 		pthread_mutex_lock(&data->mutex);
 		data->compteur++;

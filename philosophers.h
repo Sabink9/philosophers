@@ -6,7 +6,7 @@
 /*   By: saciurus <saciurus@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/09 17:10:03 by saciurus          #+#    #+#             */
-/*   Updated: 2025/09/09 18:36:14 by saciurus         ###   ########.fr       */
+/*   Updated: 2025/09/11 16:05:31 by saciurus         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@ typedef struct s_philo
 	int				id;
 	int				meals_eaten;
 	long			last_meal;
+	int				waiting;
 	pthread_mutex_t	*left_fork;
 	pthread_mutex_t	*right_fork;
 	struct s_data	*data;
@@ -38,7 +39,6 @@ typedef struct s_data
 	int				must_eat;
 	int				stop;
 	int				start_time;
-	int				next_to_eat;
 	t_philo			*philos;
 	pthread_mutex_t	*forks;
 	pthread_mutex_t	print_mutex;
