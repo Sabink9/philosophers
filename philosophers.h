@@ -6,7 +6,7 @@
 /*   By: saciurus <saciurus@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/09 17:10:03 by saciurus          #+#    #+#             */
-/*   Updated: 2025/09/12 13:00:08 by saciurus         ###   ########.fr       */
+/*   Updated: 2025/09/12 15:49:20 by saciurus         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,6 @@
 # include <stdlib.h>
 # include <sys/time.h>
 # include <unistd.h>
-#include <signal.h>
 
 typedef struct s_philo
 {
@@ -39,13 +38,23 @@ typedef struct s_data
 	long			time_to_sleep;
 	int				must_eat;
 	int				stop;
-	int				start_time;
 	t_philo			*philos;
 	pthread_mutex_t	*forks;
 	pthread_mutex_t	print_mutex;
 	pthread_mutex_t	meal_mutex;
 }					t_data;
 
-void				parse_args(int ac, char **av, t_data *params);
+int				parse_args(int ac, char **av, t_data *params);
+int					init_philo(t_data *data);
+int					can_eat(t_philo *philo);
+void				eat_philo(t_philo *philo, long start_time);
+void				take_forks(t_philo *philo, long start_time);
+void				release_forks(t_philo *philo);
+void	sleep_philo(t_philo *philo, long start_time);
+void	think_philo(t_philo *philo, long start_time);
+int					ft_atoi(char *str);
+long				get_time_ms(void);
+int					is_positive_number(const char *str);
+void				cleanup(t_data *data, pthread_t *threads);
 
 #endif

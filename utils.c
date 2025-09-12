@@ -6,7 +6,7 @@
 /*   By: saciurus <saciurus@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 13:06:10 by saciurus          #+#    #+#             */
-/*   Updated: 2025/09/12 14:46:13 by saciurus         ###   ########.fr       */
+/*   Updated: 2025/09/12 15:13:06 by saciurus         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,4 +56,21 @@ int is_positive_number(const char *str)
 		i++;
 	}
 	return (1);
+}
+
+void	cleanup(t_data *data, pthread_t *threads)
+{
+	int	i;
+
+	i = 0;
+	while (i < data->nb_philo)
+	{
+		pthread_mutex_destroy(&data->forks[i]);
+		i++;
+	}
+	pthread_mutex_destroy(&data->print_mutex);
+	pthread_mutex_destroy(&data->meal_mutex);
+	free(data->forks);
+	free(data->philos);
+	free(threads);
 }
