@@ -1,55 +1,46 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   init_philo.c                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: saciurus <saciurus@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/09/12 14:54:14 by saciurus          #+#    #+#             */
+/*   Updated: 2025/09/12 14:54:29 by saciurus         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "philosophers.h"
 
-
-void	init_philo(t_params params)
+int	init_philo(t_data *data)
 {
-	t_philo	*philos;
-	pthread_mutex_t	*forks;
 	int	i;
 
-	philos = malloc(sizeof(t_philo) * params.number_of_philosophers);
-	if (!philos)
-		return (-1);
-	forks = malloc(sizeof(pthread_mutex_t) * params.number_of_philosophers);
-	if (!forks)
-		return (-1);
-	i = 1;
-	while (i <= params.number_of_philosophers)
+	data->forks = malloc(sizeof(pthread_mutex_t) * data->nb_philo);
+	if (!data->forks)
+		return (1);
+	i = 0;
+	while (i < data->nb_philo)
 	{
-		pthread_mutex_init(&forks[i], NULL);
+		pthread_mutex_init(&data->forks[i], NULL);
 		i++;
 	}
-	i = 1;
-	while (i <= params.number_of_philosophers)
+	data->philos = malloc(sizeof(t_philo) * data->nb_philo);
+	if (!data->philos)
+		return (1);
+	i = 0;
+	while (i < data->nb_philo)
 	{
-		philos[i].id = i;
-		philos[i].left_fork = &forks[i];
-		philos[i].right_fork = &forks[(i + 1) % params.number_of_philosophers];
+		data->philos[i].id = i + 1;
+		data->philos[i].left_fork = &data->forks[i];
+		data->philos[i].right_fork = &data->forks[(i + 1) % data->nb_philo];
+		data->philos[i].meals_eaten = 0;
+		data->philos[i].last_meal = 0;
+		data->philos[i].data = data;
 		i++;
 	}
+	pthread_mutex_init(&data->print_mutex, NULL);
+	pthread_mutex_init(&data->meal_mutex, NULL);
+	data->stop = 0;
 	return (0);
-}
-void	*routine_philo(void *arg)
-{
-	t_philo *philo;
-
-	philo = (t_philo *)arg;
-	while (1)
-	{
-		
-		pthread_mutex_lock(philo->left_fork);
-		pthread_mutex_lock(philo->right_fork);
-
-		// manger (mettre à jour last_meal_time, meals_eaten, usleep(time_to_eat))
-		// afficher un message
-
-		pthread_mutex_unlock(philo->right_fork);
-		pthread_mutex_unlock(philo->left_fork);
-
-		// dormir (usleep(time_to_sleep))
-		// afficher un message
-
-		// penser (petite pause, ou juste passer au tour suivant)
-	}
-	return (NULL);
 }

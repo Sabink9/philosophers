@@ -6,7 +6,7 @@
 /*   By: saciurus <saciurus@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/09 17:10:03 by saciurus          #+#    #+#             */
-/*   Updated: 2025/09/11 16:05:31 by saciurus         ###   ########.fr       */
+/*   Updated: 2025/09/12 13:00:08 by saciurus         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 # include <stdlib.h>
 # include <sys/time.h>
 # include <unistd.h>
+#include <signal.h>
 
 typedef struct s_philo
 {
