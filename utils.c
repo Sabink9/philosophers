@@ -6,7 +6,7 @@
 /*   By: saciurus <saciurus@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 13:06:10 by saciurus          #+#    #+#             */
-/*   Updated: 2025/09/12 15:13:06 by saciurus         ###   ########.fr       */
+/*   Updated: 2025/09/16 14:19:49 by saciurus         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,13 +28,15 @@ int	ft_atoi(char *str)
 		return (-1);
 	return (res);
 }
+
 long	get_time_ms(void)
 {
 	struct timeval	tv;
 
 	gettimeofday(&tv, NULL);
-	return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+	return ((tv.tv_sec * 1000) + (tv.tv_usec / 1000));
 }
+
 int	ft_isdigit(int character)
 {
 	if (character >= '0' && character <= '9')
@@ -42,10 +44,11 @@ int	ft_isdigit(int character)
 	else
 		return (0);
 }
-int is_positive_number(const char *str)
+
+int	is_positive_number(const char *str)
 {
-	int i;
-	
+	int	i;
+
 	i = 0;
 	if (str[0] == '\0')
 		return (0);

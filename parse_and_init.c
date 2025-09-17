@@ -1,24 +1,19 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   parse_and_init.c                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: saciurus <saciurus@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/09/16 14:20:02 by saciurus          #+#    #+#             */
+/*   Updated: 2025/09/16 18:29:44 by saciurus         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "philosophers.h"
 
-int	parse_args(int ac, char **av, t_data *params)
+void	attribut_params(int ac, char **av, t_data *params)
 {
-	int	i;
-
-	if (ac != 5 && ac != 6)
-	{
-		printf("Usage: ./philo nb_philo time_to_die time_to_eat time_to_sleep [must_eat]\n");
-		return (1);
-	}
-	i = 1;
-	while (i < ac)
-	{
-		if (!is_positive_number(av[i]))
-		{
-			printf("Erreur tout les args doivent etre des entiers positifs");
-			return (1);
-		}
-		i++;
-	}
 	params->nb_philo = ft_atoi(av[1]);
 	params->time_to_die = ft_atoi(av[2]);
 	params->time_to_eat = ft_atoi(av[3]);
@@ -27,8 +22,31 @@ int	parse_args(int ac, char **av, t_data *params)
 		params->must_eat = ft_atoi(av[5]);
 	else
 		params->must_eat = -1;
+}
+
+int	parse_args(int ac, char **av, t_data *params)
+{
+	int	i;
+
+	if (ac != 5 && ac != 6)
+	{
+		printf("usage : nb_philo timetodie timetoeat timetosleep [musteat]\n");
+		return (1);
+	}
+	i = 1;
+	while (i < ac)
+	{
+		if (!is_positive_number(av[i]))
+		{
+			printf("Erreur tout les args doivent etre des entiers positifs\n");
+			return (1);
+		}
+		i++;
+	}
+	attribut_params(ac, av, params);
 	return (0);
 }
+
 void	fill_data(t_data *data, int i)
 {
 	while (i < data->nb_philo)

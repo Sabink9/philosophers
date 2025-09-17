@@ -6,7 +6,7 @@
 /*   By: saciurus <saciurus@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/12 15:08:48 by saciurus          #+#    #+#             */
-/*   Updated: 2025/09/12 15:21:56 by saciurus         ###   ########.fr       */
+/*   Updated: 2025/09/16 14:24:31 by saciurus         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,9 +40,9 @@ int	can_eat(t_philo *philo)
 
 void	print_actions(t_philo *philo, long timestamp)
 {
-		printf("%ld %d has taken a fork\n", timestamp, philo->id);
-		printf("%ld %d has taken a fork\n", timestamp, philo->id);
-		printf("%ld %d is eating\n", timestamp, philo->id);
+	printf("%ld %d has taken a fork\n", timestamp, philo->id);
+	printf("%ld %d has taken a fork\n", timestamp, philo->id);
+	printf("%ld %d is eating\n", timestamp, philo->id);
 }
 
 void	eat_philo(t_philo *philo, long start_time)

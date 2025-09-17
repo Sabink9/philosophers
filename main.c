@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: saciurus <saciurus@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/09/16 14:24:43 by saciurus          #+#    #+#             */
+/*   Updated: 2025/09/16 18:59:55 by saciurus         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "philosophers.h"
 
 void	*routine(void *arg)
@@ -23,79 +35,73 @@ void	*routine(void *arg)
 	return (NULL);
 }
 
-void	handle_dead(t_data *data, long start_time, int i, int *done)
+int	check_and_join(pthread_t *threads, t_data *data, pthread_t *monitor,
+		int created)
 {
-	while (i < data->nb_philo && !data->stop)
-	{
-		pthread_mutex_lock(&data->meal_mutex);
-		if (get_time_ms() - data->philos[i].last_meal > data->time_to_die)
-		{
-			pthread_mutex_lock(&data->print_mutex);
-			printf("%ld %d died\n", get_time_ms() - start_time,
-					data->philos[i].id);
-			pthread_mutex_unlock(&data->print_mutex);
-			data->stop = 1;
-		}
-		if (data->must_eat > 0 && data->philos[i].meals_eaten >= data->must_eat)
-			(*done)++;
-		pthread_mutex_unlock(&data->meal_mutex);
-		i++;
-	}
-}
+	int	i;
 
-void	*monitor_routine(void *arg)
-{
-	t_data	*data;
-	int		i;
-	int		done;
-	long	start_time;
-
-	start_time = get_time_ms();
-	data = arg;
-	while (!data->stop)
+	if (pthread_create(monitor, NULL, monitor_routine, data) != 0)
 	{
 		i = 0;
-		done = 0;
-		handle_dead(data, start_time, i, &done);
-		if (data->must_eat > 0 && done == data->nb_philo)
+		while (i < created)
 		{
-			pthread_mutex_lock(&data->print_mutex);
-			usleep(data->time_to_eat * 1000);
-			printf("%ld All philosophers have eaten %d meals each\n",
-					get_time_ms() - start_time,
-					data->must_eat);
-			pthread_mutex_unlock(&data->print_mutex);
-			data->stop = 1;
+			pthread_join(threads[i], NULL);
+			i++;
 		}
-		usleep(5000);
+		return (1);
 	}
-	return (NULL);
+	i = 0;
+	while (i < created)
+	{
+		pthread_join(threads[i], NULL);
+		i++;
+	}
+	pthread_join(*monitor, NULL);
+	return (0);
 }
 
 int	create_threads(pthread_t **threads, t_data *data, pthread_t *monitor)
 {
 	int	i;
+	int	created;
 
-	i = 0;
 	*threads = malloc(sizeof(pthread_t) * data->nb_philo);
 	if (!*threads)
 		return (1);
+	i = 0;
+	created = 0;
 	while (i < data->nb_philo)
 	{
 		data->philos[i].last_meal = get_time_ms();
 		data->philos[i].waiting = 0;
-		pthread_create(&(*threads)[i], NULL, routine, &data->philos[i]);
+		if (pthread_create(&(*threads)[i], NULL, routine,
+			&data->philos[i]) != 0)
+		{
+			while (created-- > 0)
+				pthread_join((*threads)[created], NULL);
+			return (1);
+		}
+		created++;
 		i++;
 	}
-	if (pthread_create(monitor, NULL, monitor_routine, data) != 0)
+	if (check_and_join(*threads, data, monitor, created))
 		return (1);
-	i = 0;
-	while (i < data->nb_philo)
+	return (0);
+}
+
+int	check_parse(t_data *data)
+{
+	if (data->nb_philo <= 0 || data->time_to_die <= 0 || data->time_to_eat <= 0
+		|| data->time_to_sleep <= 0)
 	{
-		pthread_join((*threads)[i], NULL);
-		i++;
+		printf("Erreur : les valeurs doivent être supérieures à 0.\n");
+		return (1);
 	}
-	pthread_join(*monitor, NULL);
+	if (data->must_eat == 0)
+	{
+		printf("Erreur : must_eat doit être supérieur à 0 ou absent.\n");
+		return (1);
+	}
 	return (0);
 }
 
@@ -108,21 +114,19 @@ int	main(int ac, char **av)
 	threads = NULL;
 	if (parse_args(ac, av, &data))
 		return (1);
-	if (data.nb_philo <= 0 || data.time_to_die <= 0 || data.time_to_eat <= 0
-		|| data.time_to_sleep <= 0)
-		printf("Erreur : les valeurs doivent être supérieures à 0.\n");
-	if (data.must_eat == 0)
-		printf("Erreur : must_eat doit être supérieur à 0 ou absent.\n");
-	if (data.nb_philo <= 0 || data.time_to_die <= 0 || data.time_to_eat <= 0
-		|| data.time_to_sleep <= 0 || data.must_eat == 0)
-			return (1);
+	if (check_parse(&data))
+		return (1);
 	if (init_philo(&data))
 	{
 		printf("Erreur lors de l'initialisation des philosophes\n");
+		cleanup(&data, threads);
 		return (1);
 	}
 	if (create_threads(&threads, &data, &monitor))
+	{
+		cleanup(&data, threads);
 		return (1);
+	}
 	cleanup(&data, threads);
 	return (0);
 }
